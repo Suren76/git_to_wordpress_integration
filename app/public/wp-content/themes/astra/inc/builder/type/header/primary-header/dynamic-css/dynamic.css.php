@@ -26,7 +26,7 @@ add_filter( 'astra_dynamic_theme_css', 'astra_primary_header_breakpoint_style', 
  */
 function astra_primary_header_breakpoint_style( $dynamic_css, $dynamic_css_filtered = '' ) {
 
-	if ( ! is_customize_preview() && ( ! Astra_Builder_helper::is_row_empty( 'primary', 'header', 'desktop' ) && ! Astra_Builder_helper::is_row_empty( 'primary', 'header', 'mobile' ) ) ) {
+	if ( ! is_customize_preview() && ( ! Astra_Builder_Helper::is_row_empty( 'primary', 'header', 'desktop' ) && ! Astra_Builder_Helper::is_row_empty( 'primary', 'header', 'mobile' ) ) ) {
 		return $dynamic_css;
 	}
 
@@ -56,7 +56,15 @@ function astra_primary_header_breakpoint_style( $dynamic_css, $dynamic_css_filte
 		$common_css_cart_output = array(
 			'.ast-desktop .ast-primary-header-bar .ast-header-woo-cart, .ast-desktop .ast-primary-header-bar .ast-header-edd-cart' => array(
 				'line-height' => astra_get_css_value( $hb_header_height_desktop, 'px' ),
+				'min-height'  => astra_get_css_value( $hb_header_height_desktop, 'px' ),
 			),
+
+			'.woocommerce .ast-site-header-cart, .ast-site-header-cart' => array(
+				'display'     => 'flex',
+				'flex-wrap'   => 'wrap',
+				'align-items' => 'center',
+			),
+
 		);
 
 		$parse_css .= astra_parse_css( $common_css_cart_output );
@@ -96,13 +104,13 @@ function astra_primary_header_breakpoint_style( $dynamic_css, $dynamic_css_filte
 	}
 
 	$padding_below_breakpoint = array(
-		'#masthead .ast-mobile-header-wrap .ast-primary-header-bar, #masthead .ast-mobile-header-wrap .ast-below-header-bar' => array(
+		'.ast-header-break-point #masthead .ast-mobile-header-wrap .ast-primary-header-bar, .ast-header-break-point #masthead .ast-mobile-header-wrap .ast-below-header-bar, .ast-header-break-point #masthead .ast-mobile-header-wrap .ast-above-header-bar' => array(
 			'padding-left'  => '20px',
 			'padding-right' => '20px',
 		),
 	);
 
-	$parse_css .= astra_parse_css( $padding_below_breakpoint, '', astra_get_tablet_breakpoint() );
+	$parse_css .= astra_parse_css( $padding_below_breakpoint );
 
 	// Header Separator.
 	$header_separator = astra_get_option( 'hb-header-main-sep' );
@@ -144,7 +152,37 @@ function astra_primary_header_breakpoint_style( $dynamic_css, $dynamic_css_filte
 	$parse_css .= astra_parse_css( $border_responsive_style );
 	$parse_css .= astra_parse_css( $border_desktop_style, astra_get_tablet_breakpoint( '', 1 ) );
 
-	$header_bg_obj = astra_get_option( 'hb-header-bg-obj-responsive' );
+	// Header background colours.
+	$header_bg_obj     = astra_get_option( 'hb-header-bg-obj-responsive' );
+	$hba_header_bg_obj = astra_get_option( 'hba-header-bg-obj-responsive' );
+	$hbb_header_bg_obj = astra_get_option( 'hbb-header-bg-obj-responsive' );
+
+	// Handle style guide logo background cases inside the customizer.
+	if ( is_customize_preview() ) {
+		$header_items = astra_get_option( 'header-desktop-items', array() );
+	
+		$header_main_color = array(
+			'.ast-sg-element-wrap.ast-sg-logo-section' => astra_get_responsive_background_obj( $header_bg_obj, 'desktop' ),
+		);
+
+		$sections = array(
+			'above'   => $hba_header_bg_obj,
+			'primary' => $header_bg_obj,
+			'below'   => $hbb_header_bg_obj,
+		);
+	
+		foreach ( $sections as $section => $bg_obj ) {
+			if ( isset( $header_items[ $section ] ) && astra_is_logo_in_section( $header_items[ $section ] ) ) {
+				$header_main_color = array(
+					'.ast-sg-element-wrap.ast-sg-logo-section' => astra_get_responsive_background_obj( $bg_obj, 'desktop' ),
+				);
+				break;
+			}
+		}
+	
+		// Parse the CSS
+		$parse_css .= astra_parse_css( $header_main_color );
+	}   
 
 	/**
 	 * Responsive Colors options
@@ -186,7 +224,7 @@ function astra_primary_header_breakpoint_style( $dynamic_css, $dynamic_css_filte
 
 	$parent_selector = '.ast-desktop .ast-primary-header-bar.main-header-bar, .ast-header-break-point #masthead .ast-primary-header-bar.main-header-bar';
 
-	$dynamic_css .= Astra_Builder_Base_Dynamic_CSS::prepare_advanced_margin_padding_css( $_section, $parent_selector );
+	$dynamic_css .= Astra_Extended_Base_Dynamic_CSS::prepare_advanced_margin_padding_css( $_section, $parent_selector );
 
 	$dynamic_css .= Astra_Builder_Base_Dynamic_CSS::prepare_visibility_css( $_section, '.ast-primary-header-bar', 'block', 'grid' );
 

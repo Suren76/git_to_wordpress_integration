@@ -5,8 +5,6 @@
  * Eventually, some of the functionality here could be replaced by core features.
  *
  * @package     Astra
- * @author      Astra
- * @copyright   Copyright (c) 2020, Astra
  * @link        https://wpastra.com/
  * @since       Astra 1.1.0
  */
@@ -55,7 +53,7 @@ if ( ! function_exists( 'astra_woo_shop_parent_category' ) ) :
 				global $product;
 				$product_categories = function_exists( 'wc_get_product_category_list' ) ? wc_get_product_category_list( get_the_ID(), ';', '', '' ) : $product->get_categories( ';', '', '' );
 
-				$product_categories = htmlspecialchars_decode( wp_strip_all_tags( $product_categories ) );
+				$product_categories = wp_strip_all_tags( $product_categories );
 				if ( $product_categories ) {
 					list( $parent_cat ) = explode( ';', $product_categories );
 					echo apply_filters( 'astra_woo_shop_product_categories', esc_html( $parent_cat ), get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -154,9 +152,14 @@ if ( ! function_exists( 'astra_woo_woocommerce_template_loop_product_title' ) ) 
 	 */
 	function astra_woo_woocommerce_template_loop_product_title() {
 
-		echo '<a href="' . esc_url( get_the_permalink() ) . '" class="ast-loop-product__link">';
+		$product_title_link = apply_filters( 'astra_woo_shop_product_title_link', '__return_true' );
+		if ( $product_title_link ) {
+			echo '<a href="' . esc_url( get_the_permalink() ) . '" class="ast-loop-product__link">';
+				woocommerce_template_loop_product_title();
+			echo '</a>';
+		} else {
 			woocommerce_template_loop_product_title();
-		echo '</a>';
+		}
 	}
 }
 
@@ -297,3 +300,104 @@ if ( ! function_exists( 'astra_woocommerce_div_wrapper_close' ) ) :
 	}
 
 endif;
+
+
+
+/**
+ * Checking whether shop page style is selected as modern layout.
+ */
+if ( ! function_exists( 'astra_is_shop_page_modern_style' ) ) :
+
+	/**
+	 * Checking whether shop page style is selected as modern layout.
+	 *
+	 * @return bool true|false.
+	 */
+	function astra_is_shop_page_modern_style() {
+		return ( 'shop-page-modern-style' === astra_get_option( 'shop-style' ) ) ? true : false;
+	}
+
+endif;
+
+/**
+ * Check if Woocommerce pro addons is enabled.
+ *
+ * @return bool true|false.
+ */
+function astra_has_pro_woocommerce_addon() {
+	/** @psalm-suppress UndefinedClass  */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+	return ( defined( 'ASTRA_EXT_VER' ) && Astra_Ext_Extension::is_active( 'woocommerce' ) ) ? true : false;
+	/** @psalm-suppress UndefinedClass  */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+}
+
+/**
+ * Support cart color setting to default cart icon, till now with other cart icons have this color compatibility but default one don't have this.
+ * This case is only for old header layout.
+ *
+ * @since 3.9.2
+ * @return boolean false if it is an existing user, true if not.
+ */
+function astra_cart_color_default_icon_old_header() {
+	$astra_settings = get_option( ASTRA_THEME_SETTINGS );
+	return apply_filters( 'astra_support_default_cart_color_in_old_header', isset( $astra_settings['can-reflect-cart-color-in-old-header'] ) ? false : true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+}
+
+/**
+ * Function to check the Add to Cart quantity buttons.
+ *
+ * @return bool true|false.
+ * @since 3.9.2
+ */
+function astra_add_to_cart_quantity_btn_enabled() {
+	return apply_filters( 'astra_add_to_cart_quantity_btn_enabled', astra_get_option( 'single-product-plus-minus-button' ) );
+}
+
+/**
+ * Woocommerce MyAccount Page Endpoint.
+ */
+if ( ! function_exists( 'astra_get_wc_endpoints_title' ) ) {
+
+	/**
+	 * Woocommerce MyAccount Page Endpoint.
+	 *
+	 * @param string $title for MyAccount title endpoint.
+	 * @return string
+	 *
+	 * @since 4.3.0
+	 */
+	function astra_get_wc_endpoints_title( $title ) {
+		if ( class_exists( 'WooCommerce' ) && is_wc_endpoint_url() && is_account_page() ) {
+			$endpoint = WC()->query->get_current_endpoint();
+			$action   = isset( $_GET['action'] ) && is_string( $_GET['action'] ) ? sanitize_text_field( wp_unslash( $_GET['action'] ) ) : '';
+
+			$ep_title = $endpoint ? WC()->query->get_endpoint_title( $endpoint, $action ) : '';
+
+			if ( $ep_title ) {
+				return $ep_title;
+			}
+		}
+
+		return $title;
+	}
+
+	add_filter( 'astra_the_title', 'astra_get_wc_endpoints_title' );
+}
+
+if ( ! function_exists( 'astra_woocommerce_get_cart_url' ) ) {
+	/**
+	 * Filters and returns the WooCommerce cart URL for compatibility with WooCommerce 9.3.0.
+	 *
+	 * @param string $cart_url WooCommerce cart page URL.
+	 *
+	 * @return string Returns the filtered WooCommerce cart page URL.
+	 *
+	 * @since 4.8.3
+	 */
+	function astra_woocommerce_get_cart_url( $cart_url ) {
+		// Check if WooCommerce function exists.
+		if ( function_exists( 'wc_get_page_permalink' ) ) {
+			$cart_url = wc_get_page_permalink( 'cart' );
+		}
+		return $cart_url;
+	}
+}

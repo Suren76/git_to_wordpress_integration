@@ -3,8 +3,6 @@
  * Easy Digital Downloads Options for Astra Theme.
  *
  * @package     Astra
- * @author      Astra
- * @copyright   Copyright (c) 2020, Astra
  * @link        https://wpastra.com/
  * @since       Astra 1.5.5
  */
@@ -43,9 +41,8 @@ if ( ! class_exists( 'Astra_Edd_Single_Product_Layout_Configs' ) ) {
 					'control'  => 'ast-toggle-control',
 					'default'  => astra_get_option( 'disable-edd-single-product-nav' ),
 					'title'    => __( 'Disable Product Navigation', 'astra' ),
+					'divider'  => array( 'ast_class' => 'ast-top-section-divider' ),
 					'priority' => 10,
-					'divider'  => array( 'ast_class' => 'ast-bottom-divider' ),
-
 				),
 			);
 

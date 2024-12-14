@@ -3,8 +3,6 @@
  * Register customizer panels & sections for Easy Digital Downloads.
  *
  * @package     Astra
- * @author      Astra
- * @copyright   Copyright (c) 2020, Astra
  * @link        https://wpastra.com/
  * @since       Astra 1.5.5
  */
@@ -39,6 +37,14 @@ if ( ! class_exists( 'Astra_Customizer_Register_Edd_Section' ) ) {
 					'type'     => 'section',
 					'title'    => __( 'Easy Digital Downloads', 'astra' ),
 					'priority' => 60,
+				),
+
+				array(
+					'name'     => 'section-edd-general',
+					'title'    => __( 'General', 'astra' ),
+					'type'     => 'section',
+					'section'  => 'section-edd-group',
+					'priority' => 10,
 				),
 
 				array(

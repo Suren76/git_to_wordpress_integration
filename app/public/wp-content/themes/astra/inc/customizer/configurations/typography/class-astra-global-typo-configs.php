@@ -3,8 +3,6 @@
  * Styling Options for Astra Theme.
  *
  * @package     Astra
- * @author      Astra
- * @copyright   Copyright (c) 2021, Astra
  * @link        https://wpastra.com/
  * @since       Astra 3.7.0
  */
@@ -477,7 +475,7 @@ class Astra_Global_Typo_Configs extends Astra_Customizer_Config_Base {
 				'transport' => 'postMessage',
 				'priority'  => 5,
 				'title'     => __( 'Presets', 'astra' ),
-				'divider'   => array( 'ast_class' => 'ast-bottom-divider' ),
+				'divider'   => array( 'ast_class' => 'ast-section-spacing' ),
 			),
 
 		);

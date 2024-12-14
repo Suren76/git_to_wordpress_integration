@@ -3,8 +3,6 @@
  * Site Layout Option for Astra Theme.
  *
  * @package     Astra
- * @author      Astra
- * @copyright   Copyright (c) 2020, Astra
  * @link        https://wpastra.com/
  * @since       Astra 1.0.0
  */
@@ -40,6 +38,7 @@ if ( ! class_exists( 'Astra_Site_Layout_Configs' ) ) {
 					'section'     => 'section-container-layout',
 					'priority'    => 10,
 					'title'       => __( 'Container Width', 'astra' ),
+					'divider'     => array( 'ast_class' => 'ast-top-section-divider' ),
 					'context'     => ( defined( 'ASTRA_EXT_VER' ) && Astra_Ext_Extension::is_active( 'site-layouts' ) ) ? array(
 						Astra_Builder_Helper::$general_tab_config,
 						array(
@@ -54,7 +53,22 @@ if ( ! class_exists( 'Astra_Site_Layout_Configs' ) ) {
 						'step' => 1,
 						'max'  => 1920,
 					),
-					'divider'     => array( 'ast_class' => 'ast-bottom-divider' ),
+				),
+				array(
+					'name'        => ASTRA_THEME_SETTINGS . '[narrow-container-max-width]',
+					'type'        => 'control',
+					'control'     => 'ast-slider',
+					'default'     => astra_get_option( 'narrow-container-max-width' ),
+					'section'     => 'section-container-layout',
+					'priority'    => 10,
+					'title'       => __( 'Narrow Container Width', 'astra' ),
+					'suffix'      => 'px',
+					'divider'     => array( 'ast_class' => 'ast-top-section-spacing' ),
+					'input_attrs' => array(
+						'min'  => 400,
+						'step' => 1,
+						'max'  => 1000,
+					),
 				),
 			);
 

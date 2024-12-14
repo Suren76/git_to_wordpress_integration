@@ -20,7 +20,7 @@ if ( ! class_exists( 'Astra_Builder_Base_Dynamic_CSS' ) ) {
 		/**
 		 * Member Variable
 		 *
-		 * @var instance
+		 * @var mixed instance
 		 */
 		private static $instance = null;
 
@@ -30,7 +30,9 @@ if ( ! class_exists( 'Astra_Builder_Base_Dynamic_CSS' ) ) {
 		 */
 		public static function get_instance() {
 
+			/** @psalm-suppress RedundantConditionGivenDocblockType */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
 			if ( is_null( self::$instance ) ) {
+				/** @psalm-suppress RedundantConditionGivenDocblockType */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
 				self::$instance = new self();
 			}
 
@@ -44,87 +46,6 @@ if ( ! class_exists( 'Astra_Builder_Base_Dynamic_CSS' ) ) {
 
 			add_filter( 'astra_dynamic_theme_css', array( $this, 'footer_dynamic_css' ) );
 			add_filter( 'astra_dynamic_theme_css', array( $this, 'mobile_header_logo_css' ) );
-		}
-
-		/**
-		 * Prepare Advanced Margin / Padding Dynamic CSS.
-		 *
-		 * @param string $section_id section id.
-		 * @param string $selector selector.
-		 * @return array
-		 */
-		public static function prepare_advanced_margin_padding_css( $section_id, $selector ) {
-
-			if ( isset( $section_id ) && isset( $selector ) ) {
-
-				$padding = astra_get_option( $section_id . '-padding' );
-				$margin  = astra_get_option( $section_id . '-margin' );
-
-				// Desktop CSS.
-				$css_output_desktop = array(
-
-					$selector => array(
-
-						// Padding CSS.
-						'padding-top'    => astra_responsive_spacing( $padding, 'top', 'desktop' ),
-						'padding-bottom' => astra_responsive_spacing( $padding, 'bottom', 'desktop' ),
-						'padding-left'   => astra_responsive_spacing( $padding, 'left', 'desktop' ),
-						'padding-right'  => astra_responsive_spacing( $padding, 'right', 'desktop' ),
-
-						// Margin CSS.
-						'margin-top'     => astra_responsive_spacing( $margin, 'top', 'desktop' ),
-						'margin-bottom'  => astra_responsive_spacing( $margin, 'bottom', 'desktop' ),
-						'margin-left'    => astra_responsive_spacing( $margin, 'left', 'desktop' ),
-						'margin-right'   => astra_responsive_spacing( $margin, 'right', 'desktop' ),
-					),
-				);
-
-				// Tablet CSS.
-				$css_output_tablet = array(
-
-					$selector => array(
-
-						// Padding CSS.
-						'padding-top'    => astra_responsive_spacing( $padding, 'top', 'tablet' ),
-						'padding-bottom' => astra_responsive_spacing( $padding, 'bottom', 'tablet' ),
-						'padding-left'   => astra_responsive_spacing( $padding, 'left', 'tablet' ),
-						'padding-right'  => astra_responsive_spacing( $padding, 'right', 'tablet' ),
-
-						// Margin CSS.
-						'margin-top'     => astra_responsive_spacing( $margin, 'top', 'tablet' ),
-						'margin-bottom'  => astra_responsive_spacing( $margin, 'bottom', 'tablet' ),
-						'margin-left'    => astra_responsive_spacing( $margin, 'left', 'tablet' ),
-						'margin-right'   => astra_responsive_spacing( $margin, 'right', 'tablet' ),
-					),
-				);
-
-				// Mobile CSS.
-				$css_output_mobile = array(
-
-					$selector => array(
-
-						// Padding CSS.
-						'padding-top'    => astra_responsive_spacing( $padding, 'top', 'mobile' ),
-						'padding-bottom' => astra_responsive_spacing( $padding, 'bottom', 'mobile' ),
-						'padding-left'   => astra_responsive_spacing( $padding, 'left', 'mobile' ),
-						'padding-right'  => astra_responsive_spacing( $padding, 'right', 'mobile' ),
-
-						// Margin CSS.
-						'margin-top'     => astra_responsive_spacing( $margin, 'top', 'mobile' ),
-						'margin-bottom'  => astra_responsive_spacing( $margin, 'bottom', 'mobile' ),
-						'margin-left'    => astra_responsive_spacing( $margin, 'left', 'mobile' ),
-						'margin-right'   => astra_responsive_spacing( $margin, 'right', 'mobile' ),
-					),
-				);
-
-				$css_output  = astra_parse_css( $css_output_desktop );
-				$css_output .= astra_parse_css( $css_output_tablet, '', astra_get_tablet_breakpoint() );
-				$css_output .= astra_parse_css( $css_output_mobile, '', astra_get_mobile_breakpoint() );
-
-				return $css_output;
-			}
-
-			return '';
 		}
 
 		/**
@@ -391,7 +312,7 @@ if ( ! class_exists( 'Astra_Builder_Base_Dynamic_CSS' ) ) {
 
 			if ( '' !== $mobile_header_logo && '1' == $different_mobile_header_order ) {
 				$mobile_header_css = '
-				.ast-header-break-point .ast-has-mobile-header-logo .custom-logo-link {
+				.ast-header-break-point .ast-has-mobile-header-logo .custom-logo-link, .ast-header-break-point .wp-block-site-logo .custom-logo-link, .ast-desktop .wp-block-site-logo .custom-mobile-logo-link {
 					display: none;
 				}
 				.ast-header-break-point .ast-has-mobile-header-logo .custom-mobile-logo-link {
@@ -418,16 +339,26 @@ if ( ! class_exists( 'Astra_Builder_Base_Dynamic_CSS' ) ) {
 		 */
 		public static function prepare_visibility_css( $section_id, $selector, $default_property = 'flex', $mobile_tablet_default = '' ) {
 
+			$astra_options      = Astra_Theme_Options::get_astra_options();
 			$css_output_desktop = array();
 			$css_output_tablet  = array();
 			$css_output_mobile  = array();
 
-			// For Mobile/Tablet we need display grid property to display elements centerd alignment.
+			// For Mobile/Tablet we need display grid property to display elements centered alignment.
 			$mobile_tablet_default = ( $mobile_tablet_default ) ? $mobile_tablet_default : $default_property;
 
-			$hide_desktop = ( ! astra_get_option( $section_id . '-hide-desktop' ) ) ? $default_property : 'none';
-			$hide_tablet  = ( ! astra_get_option( $section_id . '-hide-tablet' ) ) ? $mobile_tablet_default : 'none';
-			$hide_mobile  = ( ! astra_get_option( $section_id . '-hide-mobile' ) ) ? $mobile_tablet_default : 'none';
+			$parent_visibility = astra_get_option(
+				$section_id . '-visibility-responsive',
+				array(
+					'desktop' => ! isset( $astra_options[ $section_id . '-visibility-responsive' ] ) && isset( $astra_options[ $section_id . '-hide-desktop' ] ) ? ( $astra_options[ $section_id . '-hide-desktop' ] ? 0 : 1 ) : 1,
+					'tablet'  => ! isset( $astra_options[ $section_id . '-visibility-responsive' ] ) && isset( $astra_options[ $section_id . '-hide-tablet' ] ) ? ( $astra_options[ $section_id . '-hide-tablet' ] ? 0 : 1 ) : 1,
+					'mobile'  => ! isset( $astra_options[ $section_id . '-visibility-responsive' ] ) && isset( $astra_options[ $section_id . '-hide-mobile' ] ) ? ( $astra_options[ $section_id . '-hide-mobile' ] ? 0 : 1 ) : 1,
+				)
+			);
+
+			$hide_desktop = ( $parent_visibility['desktop'] ) ? $default_property : 'none';
+			$hide_tablet  = ( $parent_visibility['tablet'] ) ? $mobile_tablet_default : 'none';
+			$hide_mobile  = ( $parent_visibility['mobile'] ) ? $mobile_tablet_default : 'none';
 
 			$css_output_desktop = array(
 				$selector => array(

@@ -3,8 +3,6 @@
  * Colors - Breadcrumbs Options for theme.
  *
  * @package     Astra
- * @author      Brainstorm Force
- * @copyright   Copyright (c) 2020, Brainstorm Force
  * @link        https://www.brainstormforce.com
  * @since       Astra 1.7.0
  */
@@ -48,6 +46,28 @@ if ( ! class_exists( 'Astra_Breadcrumbs_Color_Configs' ) ) {
 			}
 
 			$_configs = array(
+
+				/**
+				 * Option: Divider
+				 */
+				array(
+					'name'     => ASTRA_THEME_SETTINGS . '[breadcrumb-color-section-divider]',
+					'section'  => 'section-breadcumb',
+					'title'    => __( 'Colors', 'astra' ),
+					'type'     => 'control',
+					'control'  => 'ast-heading',
+					'priority' => 72,
+					'divider'  => array( 'ast_class' => 'ast-bottom-spacing' ),
+					'context'  => array(
+						array(
+							'setting'  => ASTRA_THEME_SETTINGS . '[breadcrumb-position]',
+							'operator' => '!=',
+							'value'    => 'none',
+						),
+						( true === Astra_Builder_Helper::$is_header_footer_builder_active ) ?
+							Astra_Builder_Helper::$design_tab_config : Astra_Builder_Helper::$general_tab_config,
+					),
+				),
 
 				/*
 				 * Breadcrumb Color
@@ -135,7 +155,7 @@ if ( ! class_exists( 'Astra_Breadcrumbs_Color_Configs' ) ) {
 							Astra_Builder_Helper::$design_tab_config : Astra_Builder_Helper::$general_tab_config,
 					),
 					'responsive' => true,
-					'divider'    => array( 'ast_class' => 'ast-bottom-divider' ),
+					'divider'    => array( 'ast_class' => 'ast-bottom-section-divider' ),
 				),
 
 				array(

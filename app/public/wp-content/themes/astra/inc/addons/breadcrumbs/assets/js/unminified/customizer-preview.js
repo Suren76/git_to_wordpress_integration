@@ -20,18 +20,11 @@
 		'.ast-breadcrumbs-wrapper .trail-items span, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumb_last, .ast-breadcrumbs-wrapper span,  .ast-breadcrumbs-wrapper .breadcrumbs, .ast-breadcrumbs-wrapper .current-item, .ast-breadcrumbs-wrapper .last, .ast-breadcrumbs-wrapper .separator, .ast-breadcrumbs-wrapper .breadcrumb-item, .ast-breadcrumbs-wrapper .breadcrumb-item.active, .ast-breadcrumbs-wrapper .breadcrumb-item:after, .ast-breadcrumbs-inner nav, .ast-breadcrumbs-inner nav .breadcrumb-item, .ast-breadcrumbs-inner nav .breadcrumb-item:after'
 	);
 	astra_generate_font_weight_css( 'astra-settings[breadcrumb-font-family]', 'astra-settings[breadcrumb-font-weight]', 'font-weight', '.ast-breadcrumbs-wrapper .trail-items span, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumb_last, .ast-breadcrumbs-wrapper span,  .ast-breadcrumbs-wrapper .breadcrumbs, .ast-breadcrumbs-wrapper .current-item, .ast-breadcrumbs-wrapper .last, .ast-breadcrumbs-wrapper .separator, .ast-breadcrumbs-wrapper .breadcrumb-item, .ast-breadcrumbs-wrapper .breadcrumb-item.active, .ast-breadcrumbs-wrapper .breadcrumb-item:after, .ast-breadcrumbs-inner nav, .ast-breadcrumbs-inner nav .breadcrumb-item, .ast-breadcrumbs-inner nav .breadcrumb-item:after' );
-	astra_css(
-		'astra-settings[breadcrumb-text-transform]',
-		'text-transform',
-		'.ast-breadcrumbs-wrapper .trail-items span, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumb_last, .ast-breadcrumbs-wrapper span,  .ast-breadcrumbs-wrapper .breadcrumbs, .ast-breadcrumbs-wrapper .current-item, .ast-breadcrumbs-wrapper .last, .ast-breadcrumbs-wrapper .separator, .ast-breadcrumbs-wrapper .breadcrumb-item, .ast-breadcrumbs-wrapper .breadcrumb-item.active, .ast-breadcrumbs-wrapper .breadcrumb-item:after, .ast-breadcrumbs-inner nav, .ast-breadcrumbs-inner nav .breadcrumb-item, .ast-breadcrumbs-inner nav .breadcrumb-item:after'
-	);
+
+
 
 	/* Breadcrumb default, Yoast SEO Breadcrumb, Breadcrumb NavXT, Ran Math Breadcrumb, SEOPress Breadcrumb - Line Height */
-	astra_css(
-		'astra-settings[breadcrumb-line-height]',
-		'line-height',
-		'.ast-breadcrumbs-wrapper .ast-breadcrumbs-name, .ast-breadcrumbs-wrapper .ast-breadcrumbs-item, .ast-breadcrumbs-wrapper .ast-breadcrumbs .separator, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumb_last, .ast-breadcrumbs-wrapper span, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumbs, .ast-breadcrumbs-wrapper .current-item, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .last, .ast-breadcrumbs-wrapper .separator, .ast-breadcrumbs-wrapper .breadcrumb-item, .ast-breadcrumbs-wrapper .breadcrumb-item.active, .ast-breadcrumbs-wrapper .breadcrumb-item:after, .ast-breadcrumbs-inner nav, .ast-breadcrumbs-inner nav .breadcrumb-item, .ast-breadcrumbs-inner nav .breadcrumb-item:after'
-	);
+	astra_font_extras_css( 'breadcrumb-font-extras', '.ast-breadcrumbs-wrapper .ast-breadcrumbs-name, .ast-breadcrumbs-wrapper .ast-breadcrumbs-item, .ast-breadcrumbs-wrapper .ast-breadcrumbs .separator, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumb_last, .ast-breadcrumbs-wrapper span, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .breadcrumbs, .ast-breadcrumbs-wrapper .current-item, .ast-breadcrumbs-wrapper a, .ast-breadcrumbs-wrapper .last, .ast-breadcrumbs-wrapper .separator, .ast-breadcrumbs-wrapper .breadcrumb-item, .ast-breadcrumbs-wrapper .breadcrumb-item.active, .ast-breadcrumbs-wrapper .breadcrumb-item:after, .ast-breadcrumbs-inner nav, .ast-breadcrumbs-inner nav .breadcrumb-item, .ast-breadcrumbs-inner nav .breadcrumb-item:after' );
 
 	/* Breadcrumb default, Yoast SEO Breadcrumb, Breadcrumb NavXT, Ran Math Breadcrumb, SEOPress Breadcrumb - Text Color */
 	astra_color_responsive_css(
@@ -96,12 +89,25 @@
 		} );
 	} );
 
+
 	/**
 	 * Breadcrumb Separator.
 	 */
+	wp.customize( 'astra-settings[breadcrumb-separator-selector]', function( value ) {
+		value.bind( function( value ) {
+			const customBreadcrumbValue = wp.customize.value( 'astra-settings[breadcrumb-separator]' )();
+			const currentSelectedSeparator = 'unicode' !== value ? value : customBreadcrumbValue;
+			let dynamicStyle = '';
+				dynamicStyle += '.trail-items li::after {';
+				dynamicStyle += 'content: "' + currentSelectedSeparator + '";';
+				dynamicStyle += '} ';
+				astra_add_dynamic_css( 'breadcrumb-separator-selector', dynamicStyle );
+		} );
+	} );
+
 	wp.customize( 'astra-settings[breadcrumb-separator]', function( value ) {
 		value.bind( function( value ) {
-			var dynamicStyle = '';
+			let dynamicStyle = '';
                 dynamicStyle += '.trail-items li::after {';
                 dynamicStyle += 'content: "' + value + '";';
                 dynamicStyle += '} ';

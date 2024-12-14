@@ -122,11 +122,65 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 	el.dispatchEvent(event);
 };
 
+/**
+ * Scroll to ID/Top with smooth scroll behavior.
+ *
+ * @since x.x.x
+ *
+ * @param {Event} e Event which is been fired.
+ * @param {String} top offset from top.
+ */
+astraSmoothScroll = function astraSmoothScroll( e, top ) {
+	e.preventDefault();
+	window.scrollTo({
+		top: top,
+		left: 0,
+		behavior: 'smooth'
+	});
+};
+
+/**
+ * Scroll to Top trigger visibility adjustments.
+ *
+ * @since x.x.x
+ *
+ * @param {Node} masthead Page header.
+ * @param {Node} astScrollTop Scroll to Top selector.
+ */
+astScrollToTopHandler = function ( masthead, astScrollTop ) {
+
+	var content = getComputedStyle(astScrollTop).content,
+		device  = astScrollTop.dataset.onDevices;
+	content = content.replace( /[^0-9]/g, '' );
+
+	if( 'both' == device || ( 'desktop' == device && '769' == content ) || ( 'mobile' == device && '' == content ) ) {
+		// Get current window / document scroll.
+		var  scrollTop = window.pageYOffset || document.body.scrollTop;
+		// If masthead found.
+		if( masthead && masthead.length ) {
+			if (scrollTop > masthead.offsetHeight + 100) {
+				astScrollTop.style.display = "block";
+			} else {
+				astScrollTop.style.display = "none";
+			}
+		} else {
+			// If there is no masthead set default start scroll
+			if ( window.pageYOffset > 300 ) {
+				astScrollTop.style.display = "block";
+			} else {
+				astScrollTop.style.display = "none";
+			}
+		}
+	} else {
+		astScrollTop.style.display = "none";
+	}
+};
+
 ( function() {
 
 	var menu_toggle_all 	 = document.querySelectorAll( '#masthead .main-header-menu-toggle' ),
 		main_header_masthead = document.getElementById('masthead'),
-		menu_click_listeners = {},
+		menu_click_listeners_nav = {},
 		mobileHeaderType = '',
 		body = document.body,
 		mobileHeader = '';
@@ -147,7 +201,6 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 	 * Updates the header type.
 	 */
 	function updateHeaderType( e ) {
-
 		mobileHeaderType = e.detail.type;
 		var popupTrigger = document.querySelectorAll( '.menu-toggle' );
 
@@ -178,11 +231,18 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 		var triggerType = event.currentTarget.trigger_type;
 		var popupWrap = document.getElementById( 'ast-mobile-popup' );
 
+		const menuToggleClose = document.getElementById('menu-toggle-close');
+
+		if( menuToggleClose ) {
+			menuToggleClose.focus();
+		}
+
         if ( ! body.classList.contains( 'ast-popup-nav-open' ) ) {
 			body.classList.add( 'ast-popup-nav-open' );
         }
 
-		if ( ! body.classList.contains( 'ast-main-header-nav-open' ) ) {
+
+		if ( ! body.classList.contains( 'ast-main-header-nav-open' ) && 'mobile' !== triggerType ) {
 			body.classList.add( 'ast-main-header-nav-open' );
 		}
 
@@ -209,7 +269,6 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 	 * Closes the Trigger when Popup is Closed.
 	 */
 	function updateTrigger(currentElement) {
-
 		mobileHeader = main_header_masthead.querySelector( "#ast-mobile-header" );
 		var parent_li_sibling = '';
 
@@ -226,17 +285,24 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 
 		}
 
-		for ( var j = 0; j < parent_li_sibling.length; j++ ) {
-
-			parent_li_sibling[j].classList.remove('ast-submenu-expanded');
-
-			var all_sub_menu = parent_li_sibling[j].querySelectorAll('.sub-menu');
-			for ( var k = 0; k < all_sub_menu.length; k++ ) {
-				all_sub_menu[k].style.display = 'none';
-			}
-		}
-
-		var popupTrigger = document.querySelectorAll( '.menu-toggle' );
+		parent_li_sibling.forEach((li_sibling) => {
+			li_sibling.classList.remove('ast-submenu-expanded');
+		
+			const all_sub_menu = Array.from(li_sibling.querySelectorAll('.sub-menu'));
+			all_sub_menu.forEach((sub_menu) => {
+				if (!sub_menu.hasAttribute('data-initial-display')) {
+					sub_menu.setAttribute('data-initial-display', window.getComputedStyle(sub_menu).display);
+				}
+		
+				if (sub_menu.getAttribute('data-initial-display') === 'block') {
+					sub_menu.style.display = 'block';
+				} else {
+					sub_menu.style.display = 'none';
+				}
+			});
+		});
+		
+        var popupTrigger = document.querySelectorAll( '.menu-toggle' );
 
 		document.body.classList.remove( 'ast-main-header-nav-open', 'ast-popup-nav-open' );
 		document.documentElement.classList.remove( 'ast-off-canvas-active' );
@@ -286,6 +352,7 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 
 				popupTriggerMobile[item].removeEventListener("click", astraNavMenuToggle, false);
 				// Open the Popup when click on trigger
+				popupTriggerMobile[item].removeEventListener("click", popupTriggerClick);
 				popupTriggerMobile[item].addEventListener("click", popupTriggerClick, false);
 				popupTriggerMobile[item].trigger_type = 'mobile';
 
@@ -294,6 +361,7 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 
 				popupTriggerDesktop[item].removeEventListener("click", astraNavMenuToggle, false);
 				// Open the Popup when click on trigger
+				popupTriggerDesktop[item].removeEventListener("click", popupTriggerClick);
 				popupTriggerDesktop[item].addEventListener("click", popupTriggerClick, false);
 				popupTriggerDesktop[item].trigger_type = 'desktop';
 
@@ -327,8 +395,8 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 			});
 
 			// Close Popup on # link click inside Popup.
-			for ( link = 0, len = popupLinks.length; link < len; link++ ) {
-				if( null !== popupLinks[link].getAttribute("href") && '#' == popupLinks[link].getAttribute("href") && !popupLinks[link].parentElement.classList.contains('menu-item-has-children')){
+			for ( let link = 0, len = popupLinks.length; link < len; link++ ) {
+				if( null !== popupLinks[link].getAttribute("href") && ( popupLinks[link].getAttribute("href").startsWith('#') || -1 !== popupLinks[link].getAttribute("href").search("#") ) && ( ! popupLinks[link].parentElement.classList.contains('menu-item-has-children') || ( popupLinks[link].parentElement.classList.contains('menu-item-has-children') && document.querySelector('header.site-header').classList.contains('ast-builder-menu-toggle-icon') ) ) ){
 					popupLinks[link].addEventListener( 'click', triggerToggleClose, true );
 					popupLinks[link].headerType = 'off-canvas';
 				}
@@ -337,16 +405,19 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 			AstraToggleSetup();
 		} else if ( 'dropdown' === mobileHeaderType ) {
 
-			var mobileDropdownContent = document.querySelector( '.ast-mobile-header-content' ) || false,
+			var mobileDropdownContent = document.querySelectorAll( '.ast-mobile-header-content' ) || false,
 			    desktopDropdownContent = document.querySelector( '.ast-desktop-header-content' ) || false;
 
 			// Close Popup on # link click inside Popup.
-			if( mobileDropdownContent ) {
-				var mobileLinks = mobileDropdownContent.getElementsByTagName('a');
-				for ( link = 0, len = mobileLinks.length; link < len; link++ ) {
-					if( null !== mobileLinks[link].getAttribute("href") && '#' == mobileLinks[link].getAttribute("href") && !mobileLinks[link].parentElement.classList.contains('menu-item-has-children') ){
-						mobileLinks[link].addEventListener( 'click', triggerToggleClose, true );
-						mobileLinks[link].headerType = 'dropdown';
+			if ( mobileDropdownContent.length > 0 ) {
+				for ( let index = 0; index < mobileDropdownContent.length; index++ ) {
+
+					var mobileLinks = mobileDropdownContent[index].getElementsByTagName('a');
+					for ( link = 0, len = mobileLinks.length; link < len; link++ ) {
+						if ( null !== mobileLinks[link].getAttribute("href") && ( mobileLinks[link].getAttribute("href").startsWith('#') || -1 !== mobileLinks[link].getAttribute("href").search("#") ) && ( !mobileLinks[link].parentElement.classList.contains('menu-item-has-children') || ( mobileLinks[link].parentElement.classList.contains('menu-item-has-children') && document.querySelector('header.site-header').classList.contains('ast-builder-menu-toggle-icon') ) ) ) {
+							mobileLinks[link].addEventListener( 'click', triggerToggleClose, true );
+							mobileLinks[link].headerType = 'dropdown';
+						}
 					}
 				}
 			}
@@ -363,6 +434,7 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 			for ( var item = 0;  item < popupTriggerMobile.length; item++ ) {
 
 				popupTriggerMobile[item].removeEventListener("click", popupTriggerClick, false);
+				popupTriggerMobile[item].removeEventListener('click', astraNavMenuToggle);
 				popupTriggerMobile[item].addEventListener('click', astraNavMenuToggle, false);
 				popupTriggerMobile[item].trigger_type = 'mobile';
 
@@ -370,6 +442,7 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 			for ( var item = 0;  item < popupTriggerDesktop.length; item++ ) {
 
 				popupTriggerDesktop[item].removeEventListener("click", popupTriggerClick, false);
+				popupTriggerDesktop[item].removeEventListener('click', astraNavMenuToggle);
 				popupTriggerDesktop[item].addEventListener('click', astraNavMenuToggle, false);
 				popupTriggerDesktop[item].trigger_type = 'desktop';
 
@@ -429,7 +502,8 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 
 	} );
 
-	var mobile_width = window.innerWidth;
+	var mobile_width = ( null !== navigator.userAgent.match(/Android/i) && 'Android' === navigator.userAgent.match(/Android/i)[0] ) ? window.visualViewport.width : window.innerWidth;
+
 	function AstraHandleResizeEvent() {
 
 		var menu_offcanvas_close 	= document.getElementById('menu-toggle-close');
@@ -440,8 +514,9 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 		if ( desktop_header_content ) {
 			desktop_header_content.style.display = 'none';
 		}
+		var mobileResizeWidth = ( null !== navigator.userAgent.match(/Android/i) && 'Android' === navigator.userAgent.match(/Android/i)[0] ) ? window.visualViewport.width : window.innerWidth;
 
-		if ( window.innerWidth !== mobile_width ) {
+		if ( mobileResizeWidth !== mobile_width ) {
 			if ( menu_dropdown_close && null === elementor_editor ) {
 				menu_dropdown_close.click();
 			}
@@ -470,16 +545,17 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 		/**
 		 * Navigation Keyboard Navigation.
 		 */
-		var containerMenu, containerButton, count;
-
+		var containerButton;
 		if ( body.classList.contains('ast-header-break-point') ) {
-			containerMenu = document.getElementById( 'ast-mobile-site-navigation' );
 			containerButton = document.getElementById( 'ast-mobile-header' );
 		} else {
-			containerMenu = document.getElementById( 'ast-desktop-site-navigation' );
 			containerButton = document.getElementById( 'ast-desktop-header' );
 		}
-		navigation_accessibility( containerMenu, containerButton );
+
+		if( null !== containerButton ) {
+			var containerMenu = containerButton.querySelector( '.navigation-accessibility' );
+			navigation_accessibility( containerMenu, containerButton );
+		}
 	});
 
 	var get_window_width = function () {
@@ -530,25 +606,33 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 
 	var accountPopupTrigger = function () {
 		// Account login form popup.
-		var header_account_trigger =  document.querySelectorAll( '.ast-account-action-login' )[0];
+		var header_account_trigger =  document.querySelectorAll( '.ast-account-action-login' );
 
-		if( undefined !== header_account_trigger ) {
+		if (!header_account_trigger.length) {
+			return;
+		}
 
-			var header_account__close_trigger =  document.getElementById( 'ast-hb-login-close' );
-			var login_popup =  document.getElementById( 'ast-hb-account-login-wrap' );
+		const formWrapper = document.querySelector('#ast-hb-account-login-wrap');
 
-			header_account_trigger.onclick = function( event ) {
-				event.preventDefault();
-				event.stopPropagation();
-				if ( ! login_popup.classList.contains( 'show' ) ) {
-					login_popup.classList.add( 'show' );
-				}
-			};
+		if (!formWrapper) {
+			return;
+		}
 
-			header_account__close_trigger.onclick = function( event ) {
-				event.preventDefault();
-				login_popup.classList.remove( 'show' );
-			};
+		const formCloseBtn = document.querySelector('#ast-hb-login-close');
+
+		header_account_trigger.forEach(function(_trigger) {
+			_trigger.addEventListener('click', function(e) {
+				e.preventDefault();
+
+				formWrapper.classList.add('show');
+			});
+		});
+
+		if (formCloseBtn) {
+			formCloseBtn.addEventListener('click', function(e) {
+				e.preventDefault();
+				formWrapper.classList.remove('show');
+			});
 		}
 	}
 
@@ -557,6 +641,13 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 	AstraToggleSubMenu = function( event ) {
 
 		event.preventDefault();
+
+
+		if ('false' === event.target.getAttribute('aria-expanded') || ! event.target.getAttribute('aria-expanded')) {
+			event.target.setAttribute('aria-expanded', 'true');
+		} else {
+			event.target.setAttribute('aria-expanded', 'false');
+		}
 
 		var parent_li = this.parentNode;
 
@@ -606,28 +697,40 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 
 	AstraToggleSetup = function () {
 
-		if( typeof astraAddon != 'undefined' ) {
-			astraToggleSetupPro( mobileHeaderType, body, menu_click_listeners );
+		if( typeof astraAddon != 'undefined' && typeof astraToggleSetupPro === "function" ) {
+			astraToggleSetupPro( mobileHeaderType, body, menu_click_listeners_nav );
 		} else {
-
+			var flag = false;
+			var menuToggleAllLength;
 			if ( 'off-canvas' === mobileHeaderType || 'full-width' === mobileHeaderType ) {
 				// comma separated selector added, if menu is outside of Off-Canvas then submenu is not clickable, it work only for Off-Canvas area with dropdown style.
 				var __main_header_all = document.querySelectorAll( '#ast-mobile-popup, #ast-mobile-header' );
-				var menu_toggle_all   = document.querySelectorAll( '#ast-mobile-header .main-header-menu-toggle' );
+				var menu_toggle_all = document.querySelectorAll('#ast-mobile-header .main-header-menu-toggle');
+
+				menuToggleAllLength = menu_toggle_all.length;
 			} else {
 				var __main_header_all = document.querySelectorAll( '#ast-mobile-header' ),
-					menu_toggle_all   = document.querySelectorAll( '#ast-mobile-header .main-header-menu-toggle' );
+					menu_toggle_all = document.querySelectorAll('#ast-mobile-header .main-header-menu-toggle');
+					menuToggleAllLength = menu_toggle_all.length;
+				flag = menuToggleAllLength > 0 ? false : true;
+
+				menuToggleAllLength = flag ? 1 : menuToggleAllLength;
+
 			}
 
-			if (menu_toggle_all.length > 0) {
+			if ( menuToggleAllLength > 0 || flag ) {
 
-				for (var i = 0; i < menu_toggle_all.length; i++) {
+				for (var i = 0; i < menuToggleAllLength; i++) {
 
-					menu_toggle_all[i].setAttribute('data-index', i);
+					if ( ! flag ) {
 
-					if ( ! menu_click_listeners[i] ) {
-						menu_click_listeners[i] = menu_toggle_all[i];
-						menu_toggle_all[i].addEventListener('click', astraNavMenuToggle, false);
+						menu_toggle_all[i].setAttribute('data-index', i);
+
+						if ( ! menu_click_listeners_nav[i] ) {
+							menu_click_listeners_nav[i] = menu_toggle_all[i];
+							menu_toggle_all[i].removeEventListener('click', astraNavMenuToggle);
+							menu_toggle_all[i].addEventListener('click', astraNavMenuToggle, false);
+						}
 					}
 
 					if ('undefined' !== typeof __main_header_all[i]) {
@@ -644,7 +747,7 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 							if (astra_menu_toggle.length > 0) {
 
 								for (var j = 0; j < astra_menu_toggle.length; j++) {
-
+									astra_menu_toggle[j].removeEventListener('click', AstraToggleSubMenu);
 									astra_menu_toggle[j].addEventListener('click', AstraToggleSubMenu, false);
 								}
 							}
@@ -750,7 +853,7 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 	    }
 
 	    if( 'Safari' === M[0] && M[1] < 11 ) {
-		   bodyElement.classList.add( "ast-safari-browser-less-than-11" );
+			document.body.classList.add( "ast-safari-browser-less-than-11" );
 	    }
 	}
 
@@ -780,6 +883,22 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
             }
         }
 	}
+	var SearchInputs = document.querySelectorAll( '.search-field' );
+	SearchInputs.forEach(input => {
+		input.addEventListener('focus', function (e) {
+			var sibling = this.parentNode.parentNode.parentNode.querySelector( '.ast-search-menu-icon' );
+			if ( sibling ) {
+				astraToggleClass( sibling, 'ast-dropdown-active' );
+			}
+		});
+		input.addEventListener('blur', function (e) {
+			var sibling = this.parentNode.parentNode.parentNode.querySelector( '.ast-search-menu-icon' );
+			if ( sibling ) {
+				sibling.classList.remove( 'ast-dropdown-active' );
+				astraToggleClass( sibling, 'ast-dropdown-active' );
+			}
+		});
+	});
 
 	/* Hide Dropdown on body click*/
 	body.onclick = function( event ) {
@@ -797,12 +916,16 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 	 * Navigation Keyboard Navigation.
 	 */
 	function navigation_accessibility( containerMenu, containerButton ) {
-		if ( ! containerMenu ) {
+		if ( ! containerMenu || ! containerButton ) {
 			return;
 		}
 		var button = containerButton.getElementsByTagName( 'button' )[0];
 		if ( 'undefined' === typeof button ) {
 			button = containerButton.getElementsByTagName( 'a' )[0];
+			var search_type = button.classList.contains('astra-search-icon');
+			if ( true === search_type ) {
+				return;
+			}
 			if ( 'undefined' === typeof button ) {
 				return;
 			}
@@ -815,25 +938,28 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 			return;
 		}
 
-		menu.setAttribute( 'aria-expanded', 'false' );
 		if ( -1 === menu.className.indexOf( 'nav-menu' ) ) {
 			menu.className += ' nav-menu';
 		}
 
-		if ( 'off-canvas' === mobileHeaderType ) {
-			var popupClose = document.getElementById( 'menu-toggle-close' );
-			popupClose.onclick = function() {
-				if ( -1 !== containerMenu.className.indexOf( 'toggled' ) ) {
-					containerMenu.className = containerMenu.className.replace( ' toggled', '' );
-					button.setAttribute( 'aria-expanded', 'false' );
-					menu.setAttribute( 'aria-expanded', 'false' );
-				} else {
-					containerMenu.className += ' toggled';
-					button.setAttribute( 'aria-expanded', 'true' );
-					menu.setAttribute( 'aria-expanded', 'true' );
+		document.addEventListener('DOMContentLoaded', function () {
+			if ('off-canvas' === mobileHeaderType) {
+				var popupClose = document.getElementById('menu-toggle-close');
+				if (popupClose) {
+					popupClose.onclick = function () {
+						if (-1 !== containerMenu.className.indexOf('toggled')) {
+							containerMenu.className = containerMenu.className.replace(' toggled', '');
+							button.setAttribute('aria-expanded', 'false');
+							menu.setAttribute('aria-expanded', 'false');
+						} else {
+							containerMenu.className += ' toggled';
+							button.setAttribute('aria-expanded', 'true');
+							menu.setAttribute('aria-expanded', 'true');
+						}
+					};
 				}
-			};
-		}
+			}
+		});
 
 		button.onclick = function() {
 			if ( -1 !== containerMenu.className.indexOf( 'toggled' ) ) {
@@ -847,21 +973,139 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 			}
 		};
 
-		// Get all the link elements within the menu.
-		var links    = menu.getElementsByTagName( 'a' );
-		var subMenus = menu.getElementsByTagName( 'ul' );
+		if( ! astra.is_header_footer_builder_active ) {
+
+			// Get all the link elements within the menu.
+			var links    = menu.getElementsByTagName( 'a' );
+			var subMenus = menu.getElementsByTagName( 'ul' );
 
 
-		// Set menu items with submenus to aria-haspopup="true".
-		for ( var i = 0, len = subMenus.length; i < len; i++ ) {
-			subMenus[i].parentNode.setAttribute( 'aria-haspopup', 'true' );
+			// Set menu items with submenus to aria-haspopup="true".
+			for ( var i = 0, len = subMenus.length; i < len; i++ ) {
+				subMenus[i].parentNode.setAttribute( 'aria-haspopup', 'true' );
+			}
+
+			// Each time a menu link is focused or blurred, toggle focus.
+			for ( i = 0, len = links.length; i < len; i++ ) {
+				links[i].addEventListener( 'focus', toggleFocus, true );
+				links[i].addEventListener( 'blur', toggleFocus, true );
+				links[i].addEventListener( 'click', toggleClose, true );
+			}
+
 		}
 
-		// Each time a menu link is focused or blurred, toggle focus.
-		for ( i = 0, len = links.length; i < len; i++ ) {
-			links[i].addEventListener( 'focus', toggleFocus, true );
-			links[i].addEventListener( 'blur', toggleFocus, true );
-			links[i].addEventListener( 'click', toggleClose, true );
+		if( astra.is_header_footer_builder_active ) {
+			tabNavigation();
+		}
+
+
+	}
+
+	// Tab navigation for accessibility.
+	function tabNavigation() {
+		const dropdownToggleLinks = document.querySelectorAll('nav.site-navigation .menu-item-has-children > a .ast-header-navigation-arrow');
+		const siteNavigationSubMenu = document.querySelectorAll('nav.site-navigation .sub-menu');
+		const menuLi = document.querySelectorAll('nav.site-navigation .menu-item-has-children');
+		const megaMenuFullWidth = document.querySelectorAll('.astra-full-megamenu-wrapper');
+
+		if (dropdownToggleLinks) {
+
+			dropdownToggleLinks.forEach(element => {
+				element.addEventListener('keydown', function (e) {
+
+					if ('Enter' === e.key) {
+						if (!e.target.closest('li').querySelector('.sub-menu').classList.contains('astra-megamenu')) {
+							setTimeout(() => {
+								e.target.closest('li').querySelector('.sub-menu').classList.toggle('toggled-on');
+								e.target.closest('li').classList.toggle('ast-menu-hover');
+
+								if ('false' === e.target.getAttribute('aria-expanded') || !e.target.getAttribute('aria-expanded')) {
+									e.target.setAttribute('aria-expanded', 'true');
+								} else {
+									e.target.setAttribute('aria-expanded', 'false');
+								}
+							}, 10);
+						} else {
+							// This is to handle mega menu
+							setTimeout(() => {
+								const subMenuTarget = e.target.closest('li').querySelector('.sub-menu');
+								const fullMegaMenuWrapper = e.target.closest('li').querySelector('.astra-full-megamenu-wrapper');
+								if( subMenuTarget ) {
+									subMenuTarget.classList.toggle('astra-megamenu-focus');
+								}
+
+								if( fullMegaMenuWrapper ) {
+									fullMegaMenuWrapper.classList.toggle('astra-megamenu-wrapper-focus');
+								}
+								e.target.closest('li').classList.toggle('ast-menu-hover');
+
+								if ('false' === e.target.getAttribute('aria-expanded') || !e.target.getAttribute('aria-expanded')) {
+									e.target.setAttribute('aria-expanded', 'true');
+								} else {
+									e.target.setAttribute('aria-expanded', 'false');
+								}
+							}, 10);
+						}
+					}
+				});
+			});
+
+			if (siteNavigationSubMenu || menuLi) {
+				// Close sub-menus when clicking elsewhere
+				document.addEventListener('click', function (e) {
+					closeNavigationMenu(siteNavigationSubMenu, dropdownToggleLinks, menuLi, megaMenuFullWidth);
+				}, false);
+			}
+
+			if (siteNavigationSubMenu || menuLi) {
+				// Close sub-menus on escape key
+				document.addEventListener('keydown', function (e) {
+					if ('Escape' === e.key) {
+						closeNavigationMenu(siteNavigationSubMenu, dropdownToggleLinks, menuLi, megaMenuFullWidth);
+					}
+				}, false);
+			}
+
+		}
+
+		const allParentMenu = document.querySelectorAll('nav.site-navigation .ast-nav-menu > .menu-item-has-children > a .ast-header-navigation-arrow');
+
+		if (allParentMenu) {
+			allParentMenu.forEach(element => {
+				element.addEventListener('keydown', function (e) {
+					if (!e.target.closest('li').classList.contains('ast-menu-hover') && 'Enter' === e.key) {
+						closeNavigationMenu(siteNavigationSubMenu, dropdownToggleLinks, menuLi, megaMenuFullWidth);
+					}
+				}, false);
+			});
+		}
+	}
+
+	function closeNavigationMenu(siteNavigationSubMenu, dropdownToggleLinks, menuLi, megaMenuFullWidth) {
+		if (siteNavigationSubMenu) {
+			siteNavigationSubMenu.forEach(element => {
+				element.classList.remove('astra-megamenu-focus');
+				element.classList.remove('toggled-on');
+			});
+		}
+
+		if (menuLi) {
+			menuLi.forEach(element => {
+				element.classList.remove('ast-menu-hover');
+			});
+		}
+
+		if (megaMenuFullWidth) {
+			megaMenuFullWidth.forEach(element => {
+				element.classList.remove('astra-megamenu-wrapper-focus')
+			});
+		}
+
+
+		if (dropdownToggleLinks) {
+			dropdownToggleLinks.forEach(element => {
+				element.setAttribute('aria-expanded', 'false');
+			});
 		}
 	}
 
@@ -871,16 +1115,16 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
      * @since 1.3.2
      * @return void
      */
-    function toggleClose( )
-    {
-        var self = this || '',
+	function toggleClose( )
+	{
+		var self = this || '',
 			hash = '#';
 
-        if( self && ! self.classList.contains('astra-search-icon') && null === self.closest('.ast-builder-menu') ) {
-            var link = new String( self );
-            if( link.indexOf( hash ) !== -1 ) {
-            	var link_parent = self.parentNode;
-                if ( body.classList.contains('ast-header-break-point') ) {
+		if( self && ! self.classList.contains('astra-search-icon') && null === self.closest('.ast-builder-menu') ) {
+			var link = String( self );
+			if( link.indexOf( hash ) !== -1 ) {
+				var link_parent = self.parentNode;
+				if ( body.classList.contains('ast-header-break-point') ) {
 					if( ! ( document.querySelector('header.site-header').classList.contains('ast-builder-menu-toggle-link') && link_parent.classList.contains('menu-item-has-children') ) ) {
 						/* Close Builder Header Menu */
 						var builder_header_menu_toggle = document.querySelector( '.main-header-menu-toggle' );
@@ -894,8 +1138,8 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 						astraTriggerEvent( document.querySelector('body'), 'astraMenuHashLinkClicked' );
 					}
 
-                } else {
-	            	while ( -1 === self.className.indexOf( 'nav-menu' ) ) {
+				} else {
+					while ( -1 === self.className.indexOf( 'nav-menu' ) ) {
 						// On li elements toggle the class .focus.
 						if ( 'li' === self.tagName.toLowerCase() ) {
 							if ( -1 !== self.className.indexOf( 'focus' ) ) {
@@ -905,9 +1149,9 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 						self = self.parentElement;
 					}
 				}
-            }
-        }
-   	}
+			}
+		}
+	}
 
 	/**
 	 * Sets or removes .focus class on an element on focus.
@@ -924,15 +1168,241 @@ var astraTriggerEvent = function astraTriggerEvent( el, typeArg ) {
 		}
 	}
 
-	/* Add class if mouse clicked and remove if tab pressed */
-	if ( 'querySelector' in document && 'addEventListener' in window ) {
-		body.addEventListener( 'mousedown', function() {
-			body.classList.add( 'ast-mouse-clicked' );
-		} );
+	if( ! astra.is_header_footer_builder_active ) {
 
-		body.addEventListener( 'keydown', function() {
-			body.classList.remove( 'ast-mouse-clicked' );
-		} );
+		/* Add class if mouse clicked and remove if tab pressed */
+		if ( 'querySelector' in document && 'addEventListener' in window ) {
+			body.addEventListener( 'mousedown', function() {
+				body.classList.add( 'ast-mouse-clicked' );
+			} );
+
+			body.addEventListener( 'keydown', function() {
+				body.classList.remove( 'ast-mouse-clicked' );
+			} );
+		}
 	}
 
+	/**
+	 * Scroll to specific hash link.
+	 *
+	 * @since x.x.x
+	 */
+	if ( astra.is_scroll_to_id ) {
+		// Calculate the offset top of an element, accounting for nested elements.
+		const getOffsetTop = (element) => {
+			let offsetTop = 0;
+			while (element) {
+				offsetTop += element.offsetTop;
+				element = element.offsetParent;
+			}
+			return offsetTop;
+		}
+
+		const scrollToIDHandler = (e) => {
+
+			let offset = 0;
+			const siteHeader = document.querySelector('.site-header');
+
+			if (siteHeader) {
+
+				//Check and add offset to scroll top if header is sticky.
+				const headerHeight = siteHeader.querySelectorAll('div[data-stick-support]');
+
+				if (headerHeight) {
+					headerHeight.forEach(single => {
+						offset += single.clientHeight;
+					});
+				}
+
+				const href = e.target.closest('a').hash;
+				if (href) {
+					const scrollId = document.querySelector(href);
+					if (scrollId) {
+						const scrollOffsetTop = getOffsetTop(scrollId) - offset;
+						if( scrollOffsetTop ) {
+							astraSmoothScroll( e, scrollOffsetTop );
+						}
+					}
+				}
+			}
+		}
+
+		let hashLinks = [];
+		const links = document.querySelectorAll(
+			'a[href*="#"]:not([href="#"]):not([href="#0"]):not([href*="uagb-tab"]):not(.uagb-toc-link__trigger):not(.skip-link):not(.nav-links a):not([href*="tab-"])'
+		);
+		if (links) {
+			for (const link of links) {
+				if (link.href.split("#")[0] !== location.href.split("#")[0]) {
+					// Store the hash
+					hashLinks.push({
+						hash: link.hash,
+						url: link.href.split("#")[0],
+					});
+				} else if (link.hash !== "") {
+					link.addEventListener("click", scrollToIDHandler);
+				}
+			}
+		}
+
+		window.addEventListener('DOMContentLoaded', (event) => {
+			for (let link of hashLinks) {
+				if (window.location.href.split('#')[0] === link.url) {
+					const siteHeader = document.querySelector('.site-header');
+					let offset = 0;
+	
+					// Check and add offset to scroll top if header is sticky.
+					const headerHeight = siteHeader.querySelectorAll('div[data-stick-support]');
+					if (headerHeight) {
+						headerHeight.forEach(single => {
+							offset += single.clientHeight;
+						});
+					}
+					
+					const scrollId = document.querySelector(link.hash);
+					if (scrollId) {
+						const scrollOffsetTop = getOffsetTop(scrollId) - offset;
+						if (scrollOffsetTop) {
+							astraSmoothScroll(event, scrollOffsetTop);
+						}
+					}
+				}
+			}
+		});
+	}
+
+	/**
+	 * Scroll to top.
+	 *
+	 * @since x.x.x
+	 */
+	if ( astra.is_scroll_to_top ) {
+		var masthead     = document.querySelector( '#page header' );
+		var astScrollTop = document.getElementById( 'ast-scroll-top' );
+
+		astScrollToTopHandler(masthead, astScrollTop);
+
+		window.addEventListener('scroll', function () {
+			astScrollToTopHandler(masthead, astScrollTop);
+		});
+
+		astScrollTop.onclick = function(e){
+			astraSmoothScroll( e, 0 );
+		};
+
+		astScrollTop.addEventListener( 'keydown' , function(e) {
+			if ( e.key === 'Enter') {
+				astraSmoothScroll( e, 0 );
+			}
+		});
+	}
+
+	/**
+	 * To remove the blank space when the store notice gets dismissed.
+	 * To adjust the height of the store notice when hanged over top.
+	 *
+	 * @since x.x.x
+	 */
+	window.addEventListener('DOMContentLoaded', (event) => {
+		const isHangOverTopNotice = document.querySelector('.ast-woocommerce-store-notice-hanged');
+		const adjustBodyHeight = () => {
+			const storeNotice = document.querySelector('.woocommerce-store-notice[data-position="hang-over-top"]');
+			document.body.style.marginTop = `${storeNotice?.clientHeight || 0}px`;
+		}
+
+		if (isHangOverTopNotice) {	
+			window.addEventListener('resize', adjustBodyHeight);
+			setTimeout(() => adjustBodyHeight(), 0);
+		}
+
+		document
+			.querySelector('.woocommerce-store-notice__dismiss-link')
+			?.addEventListener('click', () => {
+				if (!wp?.customize) {
+					document.body.classList.remove('ast-woocommerce-store-notice-hanged');
+					window.removeEventListener('resize', adjustBodyHeight);
+					document.body.style.marginTop = 0;
+				}
+			});
+	});
+
 })();
+
+// Accessibility improvement for menu items.
+document.addEventListener('DOMContentLoaded', function() {
+    let submenuToggles = document.querySelectorAll('.menu-link .dropdown-menu-toggle');
+
+    // Adding event listeners for focus and keydown 
+    submenuToggles.forEach((toggle) =>  {
+        toggle.addEventListener('focus', function() {
+            updateAriaExpanded(this);
+        });
+
+        toggle.addEventListener('blur', function() {
+            updateAriaExpanded(this);
+        });
+
+        toggle.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                toggleAriaExpanded(this);
+            }
+        });
+    });
+
+    // Added event listener for Escape key press
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeAllSubmenus();
+        }
+    });
+
+    function updateAriaExpanded(toggle) {
+        let menuItemLink = toggle.closest('.menu-link');
+        let submenu = menuItemLink.nextElementSibling;
+        let isSubmenuVisible = submenu.classList.contains('toggled-on');
+        menuItemLink.setAttribute('aria-expanded', isSubmenuVisible ? 'true' : 'false');
+    }
+
+    function toggleAriaExpanded(toggle) {
+        let menuItemLink = toggle.closest('.menu-link');
+        let currentState = menuItemLink.getAttribute('aria-expanded');
+        menuItemLink.setAttribute('aria-expanded', currentState === 'true' ? 'false' : 'true');
+    }
+
+    function closeAllSubmenus() {
+        let submenuToggles = document.querySelectorAll('.menu-link .dropdown-menu-toggle');
+        submenuToggles.forEach(function(toggle) {
+            updateAriaExpanded(toggle);
+        });
+    }
+});
+
+// Accessibility improvement for product card quick view and add to cart buttons.
+document.addEventListener('DOMContentLoaded', () => {
+    const thumbnailWraps = document.querySelectorAll('.astra-shop-thumbnail-wrap');
+
+    thumbnailWraps.forEach(wrap => {
+        const focusableElements = wrap.querySelectorAll('a, span');
+
+        focusableElements.forEach(el => {
+            el.addEventListener('focus', () => {
+                wrap.querySelectorAll('.ast-on-card-button, .ast-quick-view-trigger').forEach(btn => {
+                    btn.style.opacity = '1';
+                    btn.style.visibility = 'visible';
+                    btn.style.borderStyle = 'none';
+                });
+            });
+
+            el.addEventListener('blur', () => {
+                // Added Check to check if child elements are still focused.
+                const isAnyFocused = Array.from(focusableElements).some(child => child === document.activeElement);
+                if (!isAnyFocused) {
+                    wrap.querySelectorAll('.ast-on-card-button, .ast-quick-view-trigger').forEach(btn => {
+                        btn.style.opacity = '';
+                        btn.style.visibility = '';
+                    });
+                }
+            });
+        });
+    });
+});
